@@ -25,6 +25,9 @@ class Connection implements IConnection
 	/** @var array of function (Event $event); Occurs after query is executed */
 	public $onEvent = [];
 
+    /** @var array of function (Event $event); Occurs before query is executed  */
+    public $beforeEvent = [];
+
 	/** @var array  Current connection configuration */
 	private $config;
 
@@ -281,6 +284,11 @@ class Connection implements IConnection
 
 		\dibi::$sql = $sql;
 		$event = $this->onEvent ? new Event($this, Event::QUERY, $sql) : null;
+
+        if ($event) {
+            $this->beforeEvent($event);
+        }
+
 		try {
 			$res = $this->driver->query($sql);
 
@@ -362,6 +370,11 @@ class Connection implements IConnection
 			$this->connect();
 		}
 		$event = $this->onEvent ? new Event($this, Event::BEGIN, $savepoint) : null;
+
+        if ($event) {
+            $this->beforeEvent($event);
+        }
+
 		try {
 			$this->driver->begin($savepoint);
 			if ($event) {
@@ -386,6 +399,11 @@ class Connection implements IConnection
 			$this->connect();
 		}
 		$event = $this->onEvent ? new Event($this, Event::COMMIT, $savepoint) : null;
+
+        if ($event) {
+            $this->beforeEvent($event);
+        }
+
 		try {
 			$this->driver->commit($savepoint);
 			if ($event) {
@@ -410,6 +428,11 @@ class Connection implements IConnection
 			$this->connect();
 		}
 		$event = $this->onEvent ? new Event($this, Event::ROLLBACK, $savepoint) : null;
+
+        if ($event) {
+            $this->beforeEvent($event);
+        }
+
 		try {
 			$this->driver->rollback($savepoint);
 			if ($event) {
@@ -610,4 +633,11 @@ class Connection implements IConnection
 			$handler($arg);
 		}
 	}
+
+    protected function beforeEvent($arg): void
+    {
+        foreach ($this->beforeEvent as $handler) {
+            $handler($arg);
+        }
+    }
 }
